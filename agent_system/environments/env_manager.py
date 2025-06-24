@@ -470,7 +470,7 @@ class AppWorldEnvironmentManager(EnvironmentManagerBase):
 
         text_obs, rewards, dones, infos = self.envs.step(actions)
 
-        self.save_to_history_buffer(self.pre_text_obs, actions)
+        self.save_to_history_buffer(text_obs, actions)
         self.pre_text_obs = text_obs
 
         full_text_obs = self.build_text_obs(text_obs)
@@ -486,7 +486,7 @@ class AppWorldEnvironmentManager(EnvironmentManagerBase):
         return next_observations, rewards, dones, infos
     
 
-    def build_text_obs(self, text_obs: List[str], init: bool = False, history_length: int = 20) -> List[str]:
+    def build_text_obs(self, text_obs: List[str], init: bool = False, history_length: int = 10) -> List[str]:
         """
         This function builds the text observation for the agent.
         """
@@ -512,7 +512,10 @@ class AppWorldEnvironmentManager(EnvironmentManagerBase):
                     step_number = start_index + j + 1
                     action = record["action"]
                     env_obs = record["text_obs"]
-                    action_history += f"\n[Observation {step_number}: '{env_obs}', Code {step_number}: '{action}']"
+                    action_history += f"\nCode {step_number}: \n{action}\n\nResult {step_number}: \n{env_obs}\n"
+                
+                if len(action_history) > 10000:
+                    action_history = "... " + action_history[-10000:]
 
                 obs = APPWORLD_TEMPLATE.format(
                         supervisor_first_name=self.supervisors[i]['first_name'],
@@ -524,6 +527,7 @@ class AppWorldEnvironmentManager(EnvironmentManagerBase):
                         history_length=valid_history_length,
                         action_history=action_history.strip(),
                         current_step=len(self.buffers[i]) + 1,
+                        current_observation=text_obs[i],
                     )
                 postprocess_text_obs.append(obs)
         return postprocess_text_obs
@@ -558,8 +562,12 @@ def make_envs(config):
             alf_config_path = os.path.join(os.path.dirname(__file__), 'env_package/alfworld/configs/config_tw.yaml')
         else:
             raise ValueError(f"Unsupported environment: {config.env.env_name}")
-        _envs = build_alfworld_envs(alf_config_path, config.env.seed, config.data.train_batch_size, group_n, is_train=True)
-        _val_envs = build_alfworld_envs(alf_config_path, config.env.seed + 1000, config.data.val_batch_size, 1, is_train=False)
+
+        env_kwargs = {
+            'eval_dataset': 'eval_in_distribution', # 'eval_in_distribution' or 'eval_out_of_distribution'
+        }
+        _envs = build_alfworld_envs(alf_config_path, config.env.seed, config.data.train_batch_size, group_n, is_train=True, env_kwargs=env_kwargs)
+        _val_envs = build_alfworld_envs(alf_config_path, config.env.seed + 1000, config.data.val_batch_size, 1, is_train=False, env_kwargs=env_kwargs)
         
         projection_f = partial(alfworld_projection)
         envs = AlfWorldEnvironmentManager(_envs, projection_f, config.env.env_name)

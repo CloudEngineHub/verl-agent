@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="./docs/gigpo/logo-verl-agent.png" alt="logo" width="50%">
+    <img src="./docs/gigpo/logo-verl-agent.png" alt="logo" width="55%">
 </p>
 
 <p align="center">
@@ -9,27 +9,32 @@
   <a href="https://github.com/langfengQ/verl-agent">
     <img src="https://img.shields.io/badge/GitHub-Project-181717?style=flat-square&logo=github" alt="GitHub Project"></a>
   &nbsp;
+  <a href="https://huggingface.co/collections/langfeng01/verl-agent-684970e8f51babe2a6d98554">
+    <img src="https://img.shields.io/badge/HuggingFace-Models-yellow?style=flat-square&logo=huggingface" alt="HuggingFace Models"></a>
+  &nbsp;
   <a href="https://x.com/langfengq/status/1930848580505620677">
     <img src="https://img.shields.io/badge/Twitter-Channel-000000?style=flat-square&logo=x" alt="X Channel"></a>
 </p>
 
 `verl-agent` is an extension of [veRL](https://github.com/volcengine/verl), specifically designed for training **large language model (LLM) agents via reinforcement learning (RL)**. 
 
-Unlike prior approaches that concatenate full interaction histories, `verl-agent` processes each step **independently** and is therefore **highly scalable for very long-horizon, multi-turn RL training** (e.g., tasks in ALFWorld can require up to 50 steps to complete).
+Unlike prior approaches that simply concatenate full interaction histories, `verl-agent` handles each step independently and allows for **fully customizable** input structures for every step. This design makes `verl-agent` **highly scalable for very long-horizon, multi-turn RL training** (e.g., tasks in ALFWorld can require up to 50 steps to complete).
 
 `verl-agent` provides a **diverse set of RL algorithms** (including our new algorithm GiGPO) and a **rich suite of agent environments**, enabling the development of reasoning agents in both visual and text-based tasks.
 
 # News
-- [2025.6.3] ***Major update***: Merge all features from the latest [veRL](https://github.com/volcengine/verl). For example, `verl-agent` now supports Qwen3, LoRA, REINFORCE++, and more. Feel free to explore!
-- [2025.5.22] Add support for RLOO.
-- [2025.5.19] Our paper on GiGPO released. See [link](https://arxiv.org/abs/2505.10978).
-- [2025.5.18] Code released.
+- [2025.06.12] 7B models released. 
+- [2025.06.03] ***Major update***: Merge all features from the latest [veRL](https://github.com/volcengine/verl). For example, `verl-agent` now supports Qwen3, LoRA, REINFORCE++, and more. Feel free to explore!
+- [2025.05.22] Add support for RLOO.
+- [2025.05.19] Our paper on GiGPO released. See [link](https://arxiv.org/abs/2505.10978).
+- [2025.05.18] Code released.
 
 # Quick Feature Summary
 | Feature Category | Supported Capabilities|
 | - | - |
-| **Interaction**        | ✅ Multi-turn Agent-Environment interaction<br>✅ Step-wise interaction (customizable history)<br>✅ Scalable for long-horizon tasks |
-| **Execution**       | ✅ Parallelized Gym environments<br>✅ Group environments support (for group-based RL)|
+| **Interaction**        | ✅ Multi-turn Agent-Environment interaction<br>✅ Step-wise interaction<br>✅ Scalable for long-horizon tasks |
+| **Input Flexibility**  | ✅ Fully customizable per-step input structures |
+| **Execution**          | ✅ Parallelized Gym environments<br>✅ Group environments support (for group-based RL)|
 | **Model Support**      | ✅ Qwen3<br>✅ Qwen2.5<br>✅ Qwen2.5-VL<br>✅ LLaMA3.1<br>and more |
 | **Modality**           | ✅ Text-only<br>✅ Text + Image (multi-modal) |
 | **Fine-Tuning**        | ✅ Supports LoRA fine-tuning |
@@ -59,11 +64,12 @@ Unlike prior approaches that concatenate full interaction histories, `verl-agent
     - [6. GiGPO (dynamic)](#6-gigpo-dynamic)
   - [Qwen3](#qwen3)
   - [LoRA](#lora)
-  - [Prompt-based Agent with GPT-4o](#prompt-based-agent-with-gpt-4o)  
+  - [Prompt-based Agent with GPT-4o](#prompt-based-agent-with-gpt-4o)
 - [Tips](#tips)
   - [1. Data Preparation](#1-data-preparation)
   - [2. Customize Your Own Prompts](#2-customize-your-own-prompts)
   - [3. Add New Environments](#3-add-new-environments)
+- [Contributing](#contributing)
 - [Acknowledgement](#acknowledgement)
 - [Citation](#citation)
 - [Star History](#star-history)
@@ -74,10 +80,9 @@ Unlike prior approaches that concatenate full interaction histories, `verl-agent
 
   `verl-agent` supports multi-step interactive loops between agents and environments. Agents perceive environmental feedback after each step, forming the basis for reinforcement learning.
 
-- **Scalable for Very Long-Horizon, Multi-Turn Optimization**
+- **Fully Customizable Per-Step Input Structure & Scalable for Very Long-Horizon Optimization**
 
-  Prior works like [RAGEN](https://github.com/RAGEN-AI/RAGEN) and [Search-R1](https://github.com/PeterGriffinJin/Search-R1) concatenate the entire history of states and responses. This causes the input/output length to grow rapidly with the number of turns, making them difficult to scale to long-horizon scenarios.
-  We implement a step-wise independent interaction paradigm that aligns with standard RL pipelines. Each step is processed individually, without concatenating the entire interaction history into a single input. This makes `verl-agent` highly scalable for long-horizon tasks.
+  Prior works like [RAGEN](https://github.com/RAGEN-AI/RAGEN) and [Search-R1](https://github.com/PeterGriffinJin/Search-R1) concatenate the entire history of states and responses. This causes the input length to grow rapidly with the number of turns, making them difficult to scale to long-horizon scenarios. In contrast, `verl-agent` handles each step independently. At each step, the input only includes the current observation plus extra context (see prompt [here](https://github.com/langfengQ/verl-agent/blob/master/agent_system/environments/prompts/webshop.py)). For example, developers can ***flexibly choose what history to include, such as, recent steps, key events, summaries, or external knowledge***. There's no requirement to concatenate the full history, and the input structure for each step is ***fully customizable***. For example, the optional context can be simply set as a sliding window of recent history (e.g., the last 2 steps). This means the input length stays almost constant, regardless of how many steps have occurred so far, making `verl-agent` is highly scalable for long-horizon scenarios.
   
 - **Parallelized Gym-Style Environments and Group Environments**
 
@@ -104,16 +109,19 @@ Unlike prior approaches that concatenate full interaction histories, `verl-agent
   `verl-agent` includes implementations of various RL algorithms, such as [GRPO](https://arxiv.org/abs/2402.03300), [PPO](https://arxiv.org/abs/1707.06347), [DAPO](https://arxiv.org/abs/2503.14476), [RLOO](https://arxiv.org/abs/2402.14740) and our new state-of-the-art algorithm [GiGPO](https://github.com/langfengQ/verl-agent). It also supports several variants enhanced with dynamic sampling and clip-higher techniques.
 
 # Results
-| Algorithm | Task | Model | Success Rate | Training Log | Model Checkpoint [Coming Soon] |
-|-|-|-|-|-|-|
-| GiGPO | ALFWorld | Qwen2.5-1.5B-Instruct | 86.1% | [![wandb](https://img.shields.io/badge/W%26B-view-FFBE00?logo=wandb)](https://api.wandb.ai/links/langfeng-cs-nanyang-technological-university-singapore/78zz4sc9) | ![HF](https://img.shields.io/badge/HuggingFace-model-orange?logo=huggingface) |
-| GiGPO | WebShop| Qwen2.5-1.5B-Instruct | 67.4% | [![wandb](https://img.shields.io/badge/W%26B-view-FFBE00?logo=wandb)](https://api.wandb.ai/links/langfeng-cs-nanyang-technological-university-singapore/zfnvpvxe)  | ![HF](https://img.shields.io/badge/HuggingFace-model-orange?logo=huggingface) |
-| GiGPO (dynamic) | WebShop| Qwen2.5-1.5B-Instruct | 75.0% | [![wandb](https://img.shields.io/badge/W%26B-view-FFBE00?logo=wandb)](https://api.wandb.ai/links/langfeng-cs-nanyang-technological-university-singapore/zfnvpvxe)  | ![HF](https://img.shields.io/badge/HuggingFace-model-orange?logo=huggingface) |
-| GiGPO | Sokoban [6x6]| Qwen2.5-VL-3B-Instruct | 81.0% | [![wandb](https://img.shields.io/badge/W%26B-view-FFBE00?logo=wandb)](https://api.wandb.ai/links/langfeng-cs-nanyang-technological-university-singapore/xm92tyea)  | ![HF](https://img.shields.io/badge/HuggingFace-model-orange?logo=huggingface) |
-| GiGPO | NumberLine | Qwen2.5-VL-3B-Instruct | 100.0% | [![wandb](https://img.shields.io/badge/W%26B-view-FFBE00?logo=wandb)](https://api.wandb.ai/links/langfeng-cs-nanyang-technological-university-singapore/81qzsc3n)| ![HF](https://img.shields.io/badge/HuggingFace-model-orange?logo=huggingface) |
-| GiGPO | EZPoints | Qwen2.5-VL-3B-Instruct | 100.0% | [![wandb](https://img.shields.io/badge/W%26B-view-FFBE00?logo=wandb)](https://api.wandb.ai/links/langfeng-cs-nanyang-technological-university-singapore/k0y51zei)| ![HF](https://img.shields.io/badge/HuggingFace-model-orange?logo=huggingface) |
+> ⚠️ Note: The performance of GiGPO has improved slightly after the "[2025.06.03] Major Update." To reproduce the original paper results, please use the version released prior to the "[2025.06.03] Major Update."
 
-Note: The W&B logs also include the training records for GRPO.
+| Algorithm          | Task         | Model      | Success Rate (Paper) | Training Log |
+|-------------------|--------------|--------------------------|-----------------------|-------------------------|
+| GiGPO | ALFWorld     | Qwen2.5-1.5B-Instruct    | 86.7%   |  [![wandb](https://img.shields.io/badge/W%26B-view-FFBE00?logo=wandb)](https://api.wandb.ai/links/langfeng-cs-nanyang-technological-university-singapore/78zz4sc9) |
+| GiGPO | ALFWorld     | Qwen2.5-7B-Instruct      | 90.8%   |  [![wandb](https://img.shields.io/badge/W%26B-view-FFBE00?logo=wandb)](https://api.wandb.ai/links/langfeng-cs-nanyang-technological-university-singapore/78zz4sc9) |
+| GiGPO | WebShop      | Qwen2.5-1.5B-Instruct    | 67.4%   |  [![wandb](https://img.shields.io/badge/W%26B-view-FFBE00?logo=wandb)](https://api.wandb.ai/links/langfeng-cs-nanyang-technological-university-singapore/zfnvpvxe) |
+| GiGPO | WebShop      | Qwen2.5-7B-Instruct      | 75.2%   |  [![wandb](https://img.shields.io/badge/W%26B-view-FFBE00?logo=wandb)](https://api.wandb.ai/links/langfeng-cs-nanyang-technological-university-singapore/zfnvpvxe) |
+| GiGPO | Sokoban [6x6]| Qwen2.5-VL-3B-Instruct   | 81.0%   | [![wandb](https://img.shields.io/badge/W%26B-view-FFBE00?logo=wandb)](https://api.wandb.ai/links/langfeng-cs-nanyang-technological-university-singapore/xm92tyea) |
+| GiGPO | EZPoints     | Qwen2.5-VL-3B-Instruct   | 100.0%  |  [![wandb](https://img.shields.io/badge/W%26B-view-FFBE00?logo=wandb)](https://api.wandb.ai/links/langfeng-cs-nanyang-technological-university-singapore/k0y51zei) |
+| GiGPO | NumberLine   | Qwen2-VL-2B-Instruct     | 100.0%  | [![wandb](https://img.shields.io/badge/W%26B-view-FFBE00?logo=wandb)](https://api.wandb.ai/links/langfeng-cs-nanyang-technological-university-singapore/81qzsc3n) |
+
+We have released our models on [HuggingFace](https://huggingface.co/collections/langfeng01/verl-agent-684970e8f51babe2a6d98554).
 
 # Installation
 ## Install veRL
@@ -122,7 +130,7 @@ conda create -n verl-agent python==3.12 -y
 conda activate verl-agent
 
 pip3 install torch==2.6.0 --index-url https://download.pytorch.org/whl/cu124
-pip3 install flash-attn --no-build-isolation
+pip3 install flash-attn==2.7.4.post1 --no-build-isolation
 
 pip3 install -e .
 
@@ -186,7 +194,7 @@ After WebShop is installed, return to the root directory of the repository and i
 ```bash
 cd repo_root/
 pip3 install torch==2.6.0 --index-url https://download.pytorch.org/whl/cu124
-pip3 install flash-attn --no-build-isolation
+pip3 install flash-attn==2.7.4.post1 --no-build-isolation
 pip3 install -e .
 pip3 install vllm==0.8.5
 # spacy 3.7.2 requires typer<0.10.0,>=0.3.0, but you have typer 0.15.2 which is incompatible.
@@ -212,34 +220,23 @@ pip3 install stable-baselines3==2.6.0
 ```
 ---
 ### 5. APPWorld (Experimental)
-Install APPWorld package in `verl-agent` (some warnings may be raised, you can ignore them)
+Install APPWorld package
 ```bash
 cd repo_root/
-cd ./agent_system/environments/env_package/appworld/appworld
-pip install -e .
-python -m appworld.cli install
-appworld download data
-
-cd repo_root/
-appworld download data
-```
-
-Refresh dependencies in the `verl-agent` environment:
-```bash
-cd repo_root/
+pip install git+https://github.com/StonyBrookNLP/appworld.git
+appworld install
 pip install -e .
 pip install vllm==0.8.5
 ```
 You can ignore the warning of incompatiblity for appworld, because we don't run appworld in `verl-agent` environment.
 
-Create a Dedicated Conda Environment `appworld` for the APPWorld Server:
+Create a dedicated conda environment `appworld` for the APPWorld server:
 ```bash
 conda create -n appworld python=3.12 -y
 conda activate appworld
-
-cd ./agent_system/environments/env_package/appworld/appworld
-pip install -e .
-python -m appworld.cli install
+pip install git+https://github.com/StonyBrookNLP/appworld.git
+appworld install
+appworld download data
 ```
 
 
@@ -339,6 +336,7 @@ You should first reason step-by-step about the current situation, then think car
 ```
 If you wish to further enhance or customize them, you can find and edit them in: [agent_system/environments/prompts](./agent_system/environments/prompts/).
 
+
 ## 3. Add New Environments
 To add a new environment, 
 1. Create your environment package (gym-style interface and multi-process execution) in [agent_system/environments/env_package/](./agent_system/environments/env_package/)
@@ -350,7 +348,17 @@ For a reference implementation, see the webshop environment:
 2. Prompts: [webshop prompts](./agent_system/environments/prompts/webshop.py)
 3. Environment Manager: [webshop env manager](./agent_system/environments/env_manager.py#L304)
 
-## Acknowledgement
+
+# Contributing
+
+We welcome and appreciate all contributions! If you have ideas to improve `verl-agent`, please feel free to submit a pull request (PR).
+
+Example contributions include:
+- **APPWorld Bug Fixes**: Fixed compatibility issues and ensured stable integration with the experimental APPWorld environment.
+- **Asynchronous Rollout**: Improved training efficiency and throughput by supporting asynchronous rollout pipelines.
+- **Additional Environments**: Added support for additional interactive environments to expand the benchmark coverage and task diversity.
+
+# Acknowledgement
 
 We gratefully acknowledge the contributions of the [veRL](https://github.com/volcengine/verl) team for providing a solid RL infrastructure.
 
@@ -358,7 +366,7 @@ Special thanks to the [RAGEN](https://github.com/RAGEN-AI/RAGEN) project for the
 
 We also thank the developers of [ALFWorld](https://github.com/alfworld/alfworld), [Sokoban](https://github.com/mpSchrader/gym-sokoban), [Gym Cards](https://github.com/RL4VLM/RL4VLM/tree/main/gym-cards), [WebShop](https://github.com/princeton-nlp/WebShop), and [AppWorld](https://github.com/stonybrooknlp/appworld) for providing high-quality interactive environments used in this project.
 
-## Citation
+# Citation
 If you find `verl-agent` and `GiGPO` useful in your research or applications, we would appreciate it if you could cite our work:
 
 ```
@@ -370,6 +378,6 @@ If you find `verl-agent` and `GiGPO` useful in your research or applications, we
 }
 ```
 
-## Star History
+# Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=langfengQ/verl-agent&type=Date)](https://www.star-history.com/#langfengQ/verl-agent&Date)
