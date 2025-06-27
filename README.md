@@ -190,12 +190,6 @@ cd ./agent_system/environments/env_package/webshop/webshop
 Note: If you encounter issues with gdown, you may need visit `https://drive.google.com/`, get your Google Drive cookie, and paste it into `.cache/gdown/cookies.txt`.
 Or you may need to manually download the files.
 
-
-Verify that WebShop was installed correctly by running:
-```bash
-python run_web_agent_text_env.py
-```
-
 After WebShop is installed, return to the root directory of the repository and install the verl package in `verl-agent`:
 ```bash
 cd repo_root/
