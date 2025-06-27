@@ -6,6 +6,7 @@ from functools import partial
 import os
 from agent_system.environments.prompts import *
 from agent_system.environments.base import EnvironmentManagerBase, to_numpy
+from agent_system.memory import SimpleMemory
 
 def parse_gamefile(infos):
     gamefile = []
@@ -27,16 +28,14 @@ def set_gamefile(infos, gamefile):
 
 class AlfWorldEnvironmentManager(EnvironmentManagerBase):
     def __init__(self, envs, projection_f, env_name):
-        self.buffers = None
+        self.memory = SimpleMemory()
         super().__init__(envs, projection_f, env_name)
     
     def reset(self):
         text_obs, image_obs, infos = self.envs.reset()
         self.gamefile = parse_gamefile(infos)
         # initialize the history buffer
-        if self.buffers is not None:
-            self.buffers.clear()
-        self.buffers = [[] for _ in range(len(text_obs))]
+        self.memory.reset(batch_size = len(text_obs))
         self.tasks = []
         self.pre_text_obs = text_obs
         self.extract_task(text_obs)
@@ -47,7 +46,7 @@ class AlfWorldEnvironmentManager(EnvironmentManagerBase):
     def step(self, text_actions: List[str]):
         actions, valids = self.projection_f(text_actions, self.envs.get_admissible_commands)
         text_obs, image_obs, rewards, dones, infos = self.envs.step(actions)
-        self.save_to_history_buffer(self.pre_text_obs, actions)
+        self.memory.store({'text_obs': self.pre_text_obs, 'action': actions})
         self.pre_text_obs = text_obs
 
         full_text_obs = self.build_text_obs(text_obs, self.envs.get_admissible_commands)
@@ -90,9 +89,9 @@ class AlfWorldEnvironmentManager(EnvironmentManagerBase):
                 )
             else:
                 # Get last `history_length` steps
-                recent_history = self.buffers[i][-history_length:]
+                recent_history = self.memory[i][-history_length:]
                 valid_history_length = len(recent_history)
-                start_index = len(self.buffers[i]) - valid_history_length
+                start_index = len(self.memory[i]) - valid_history_length
                 action_history = ""
                 for j, record in enumerate(recent_history):
                     step_number = start_index + j + 1
@@ -101,21 +100,16 @@ class AlfWorldEnvironmentManager(EnvironmentManagerBase):
                     action_history += f"\n[Observation {step_number}: '{env_obs}', Action {step_number}: '{action}']"
                 obs = ALFWORLD_TEMPLATE.format(
                     task_description=self.tasks[i],
-                    step_count=len(self.buffers[i]),
+                    step_count=len(self.memory[i]),
                     history_length=valid_history_length,
                     action_history=action_history.strip(),
-                    current_step=len(self.buffers[i]) + 1,
+                    current_step=len(self.memory[i]) + 1,
                     current_observation=text_obs[i],
                     admissible_actions=reformatted_admissible_actions
                 )
 
             postprocess_text_obs.append(obs)
-
         return postprocess_text_obs
-
-    def save_to_history_buffer(self, text_obs, actions):
-        for i in range(len(actions)):
-            self.buffers[i].append({'text_obs': text_obs[i], 'action': actions[i]})
 
     def _process_batch(self, batch_idx, total_batch_list, total_infos, success):
         # Find the last entry with active masks
@@ -158,7 +152,7 @@ class SokobanEnvironmentManager(EnvironmentManagerBase):
     }
     def __init__(self, envs, projection_f, env_name):
         self.is_multi_modal = envs.mode == 'rgb_array'
-        self.buffers = None
+        self.memory = SimpleMemory()
         super().__init__(envs, projection_f, env_name)
 
     def reset(self):
@@ -178,10 +172,7 @@ class SokobanEnvironmentManager(EnvironmentManagerBase):
                 'image': None,
                 'anchor': obs
             }
-        # initialize the history buffer
-        if self.buffers is not None:
-            self.buffers.clear()
-        self.buffers = [[] for _ in range(len(infos))]
+        self.memory.reset(batch_size = len(infos))
         return observations, infos
 
     def step(self, text_actions: List[str]):
@@ -192,9 +183,9 @@ class SokobanEnvironmentManager(EnvironmentManagerBase):
         for i, info in enumerate(infos):
             info['is_action_valid'] = to_numpy(valids[i])
 
+        self.memory.store({'text_obs': self.pre_text_obs, 'action': [self.ACTION_LOOKUP[act] for act in actions]})
         if self.is_multi_modal:
             next_obs = np.array(next_obs, next_obs[0].dtype)
-            self.save_to_history_buffer(self.pre_text_obs, actions)
             self.pre_text_obs = self.envs.render(mode='tiny_rgb_array')
             next_observations = {
                 'text': self.build_text_obs(infos),  
@@ -202,7 +193,6 @@ class SokobanEnvironmentManager(EnvironmentManagerBase):
                 'anchor': next_obs 
             }
         else:
-            self.save_to_history_buffer(self.pre_text_obs, actions)
             self.pre_text_obs = next_obs
             next_observations = {
                 'text': self.build_text_obs(infos, next_obs),  
@@ -228,9 +218,9 @@ class SokobanEnvironmentManager(EnvironmentManagerBase):
                 )
             else:
                 # Get last `history_length` steps
-                recent_history = self.buffers[i][-history_length:]
+                recent_history = self.memory[i][-history_length:]
                 valid_history_length = len(recent_history)
-                start_index = len(self.buffers[i]) - valid_history_length
+                start_index = len(self.memory[i]) - valid_history_length
                 action_history = ""
                 for j, record in enumerate(recent_history):
                     step_number = start_index + j + 1
@@ -243,19 +233,15 @@ class SokobanEnvironmentManager(EnvironmentManagerBase):
                     obs = SOKOBAN_VISUAL_TEMPLATE
                 else:
                     obs = SOKOBAN_TEMPLATE.format(
-                        step_count=len(self.buffers[i]),
+                        step_count=len(self.memory[i]),
                         history_length=valid_history_length,
                         action_history=action_history.strip(),
-                        current_step=len(self.buffers[i]) + 1,
+                        current_step=len(self.memory[i]) + 1,
                         current_observation=text_obs[i],
                     )
             postprocess_text_obs.append(obs)
 
         return postprocess_text_obs
-
-    def save_to_history_buffer(self, text_obs, actions):
-        for i in range(len(actions)):
-            self.buffers[i].append({'text_obs': text_obs[i], 'action': self.ACTION_LOOKUP[actions[i]]})
 
 
 class GymCardEnvironmentManager(EnvironmentManagerBase):
@@ -303,7 +289,7 @@ class GymCardEnvironmentManager(EnvironmentManagerBase):
 
 class WebshopEnvironmentManager(EnvironmentManagerBase):
     def __init__(self, envs, projection_f, env_name):
-        self.buffers = None
+        self.memory = SimpleMemory()
         super().__init__(envs, projection_f, env_name)
     
     def reset(self) -> Dict[str, Any]:
@@ -316,10 +302,7 @@ class WebshopEnvironmentManager(EnvironmentManagerBase):
                         'anchor': obs.copy()
                         }
         self.pre_text_obs = obs
-        # initialize the history buffer
-        if self.buffers is not None:
-            self.buffers.clear()
-        self.buffers = [[] for _ in range(len(infos))]
+        self.memory.reset(batch_size = len(infos))
         return observations, infos
 
     def step(self, text_actions: List[str]):
@@ -328,7 +311,7 @@ class WebshopEnvironmentManager(EnvironmentManagerBase):
 
         next_obs = self.format_obs(next_obs)
 
-        self.save_to_history_buffer(self.pre_text_obs, actions)
+        self.memory.store({'text_obs': self.pre_text_obs, 'action': actions})
         self.pre_text_obs = next_obs
 
         next_observations = {
@@ -382,10 +365,6 @@ class WebshopEnvironmentManager(EnvironmentManagerBase):
             actions.append(f"click[{txt}]")
 
         return actions
-
-    def save_to_history_buffer(self, text_obs, actions):
-        for i in range(len(actions)):
-            self.buffers[i].append({'text_obs': text_obs[i], 'action': actions[i]})
             
     def build_text_obs(self, text_obs: List[str], infos: List[List[str]], init: bool = False, history_length: int = 2) -> List[str]:
         """
@@ -405,9 +384,9 @@ class WebshopEnvironmentManager(EnvironmentManagerBase):
                 )
             else:
                 # Get last `history_length` steps
-                recent_history = self.buffers[i][-history_length:]
+                recent_history = self.memory[i][-history_length:]
                 valid_history_length = len(recent_history)
-                start_index = len(self.buffers[i]) - valid_history_length
+                start_index = len(self.memory[i]) - valid_history_length
                 action_history = ""
                 for j, record in enumerate(recent_history):
                     step_number = start_index + j + 1
@@ -416,10 +395,10 @@ class WebshopEnvironmentManager(EnvironmentManagerBase):
                     action_history += f"\n[Observation {step_number}: '{env_obs}', Action {step_number}: '{action}']"
                 obs = WEBSHOP_TEMPLATE.format(
                     task_description=self.tasks[i],
-                    step_count=len(self.buffers[i]),
+                    step_count=len(self.memory[i]),
                     history_length=valid_history_length,
                     action_history=action_history.strip(),
-                    current_step=len(self.buffers[i]) + 1,
+                    current_step=len(self.memory[i]) + 1,
                     current_observation=text_obs[i],
                     available_actions=reformatted_available_actions
                 )
@@ -448,17 +427,14 @@ class WebshopEnvironmentManager(EnvironmentManagerBase):
 
 class AppWorldEnvironmentManager(EnvironmentManagerBase):
     def __init__(self, envs, projection_f, env_name):
-        self.buffers = None
+        self.memory = SimpleMemory()
         super().__init__(envs, projection_f, env_name)
     
     def reset(self):
         text_obs, infos = self.envs.reset()
         
         self.supervisors = [info['supervisor'] for info in infos]
-        # initialize the history buffer
-        if self.buffers is not None:
-            self.buffers.clear()
-        self.buffers = [[] for _ in range(len(text_obs))]
+        self.memory.reset(batch_size = len(text_obs))
         self.tasks = text_obs.copy()
         self.pre_text_obs = text_obs
 
@@ -470,7 +446,7 @@ class AppWorldEnvironmentManager(EnvironmentManagerBase):
 
         text_obs, rewards, dones, infos = self.envs.step(actions)
 
-        self.save_to_history_buffer(text_obs, actions)
+        self.memory.store({'text_obs': text_obs, 'action': actions})
         self.pre_text_obs = text_obs
 
         full_text_obs = self.build_text_obs(text_obs)
@@ -504,9 +480,9 @@ class AppWorldEnvironmentManager(EnvironmentManagerBase):
         else:
             for i in range(len(text_obs)):
                 # Get last `history_length` steps
-                recent_history = self.buffers[i][-history_length:]
+                recent_history = self.memory[i][-history_length:]
                 valid_history_length = len(recent_history)
-                start_index = len(self.buffers[i]) - valid_history_length
+                start_index = len(self.memory[i]) - valid_history_length
                 action_history = ""
                 for j, record in enumerate(recent_history):
                     step_number = start_index + j + 1
@@ -523,19 +499,14 @@ class AppWorldEnvironmentManager(EnvironmentManagerBase):
                         supervisor_email=self.supervisors[i]['email'],
                         supervisor_phone_number=self.supervisors[i]['phone_number'],
                         task_description=self.tasks[i],
-                        step_count=len(self.buffers[i]),
+                        step_count=len(self.memory[i]),
                         history_length=valid_history_length,
                         action_history=action_history.strip(),
-                        current_step=len(self.buffers[i]) + 1,
+                        current_step=len(self.memory[i]) + 1,
                         current_observation=text_obs[i],
                     )
                 postprocess_text_obs.append(obs)
         return postprocess_text_obs
-
-    def save_to_history_buffer(self, text_obs, actions):
-        for i in range(len(actions)):
-            self.buffers[i].append({'text_obs': text_obs[i], 'action': actions[i]})
-
 
 def make_envs(config):
     """
