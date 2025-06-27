@@ -42,9 +42,9 @@ Unlike prior approaches that simply concatenate full interaction histories, `ver
 | **RL Algorithms**      | ✅ GiGPO<br>✅ GRPO<br>✅ PPO<br>✅ DAPO<br>✅ RLOO<br>✅ REINFORCE++<br>✅ Dynamic sampling & clip-higher supported <br> and more |
 | **Prompt-based Agent** | ✅ GPT-4o prompt-based agent  |
 
-# Framework Comparison Chart
+# Framework Comparison
 <p align="center">
-    <img src="./docs/gigpo/verl-agent-framework.png" alt="framework" width="100%">
+    <img src="./docs/gigpo/framework-comparison.png" alt="framework" width="100%">
 </p>
 
 
