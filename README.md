@@ -32,15 +32,15 @@ Unlike prior approaches that simply concatenate full interaction histories, `ver
 # Quick Feature Summary
 | Feature Category | Supported Capabilities|
 | - | - |
-| **Interaction**        | ✅ Multi-turn Agent-Environment interaction<br>✅ Step-wise interaction<br>✅ Scalable for long-horizon tasks |
-| **Input Flexibility**  | ✅ Fully customizable per-step input structures |
-| **Execution**          | ✅ Parallelized Gym environments<br>✅ Group environments support (for group-based RL)|
-| **Model Support**      | ✅ Qwen3<br>✅ Qwen2.5<br>✅ Qwen2.5-VL<br>✅ LLaMA3.1<br>and more |
-| **Modality**           | ✅ Text-only<br>✅ Text + Image (multi-modal) |
-| **Fine-Tuning**        | ✅ Supports LoRA fine-tuning |
-| **Environments**       | ✅ ALFWorld<br>✅ Sokoban<br>✅ Gym Cards<br>✅ WebShop<br>🧪 AppWorld (experimental) |
-| **RL Algorithms**      | ✅ GiGPO<br>✅ GRPO<br>✅ PPO<br>✅ DAPO<br>✅ RLOO<br>✅ REINFORCE++<br>✅ Dynamic sampling & clip-higher supported <br> and more |
-| **Prompt-based Agent** | ✅ GPT-4o prompt-based agent  |
+| **Interaction**          | ✅ Multi-turn Agent-Environment interaction<br>✅ Step-wise interaction<br>✅ Scalable for long-horizon tasks |
+| **Input Flexibility**    | ✅ Fully customizable per-step input structures |
+| **Execution**            | ✅ Parallelized Gym environments<br>✅ Group environments support (for group-based RL)|
+| **Model Support**        | ✅ Qwen3<br>✅ Qwen2.5<br>✅ Qwen2.5-VL<br>✅ LLaMA3.1<br>and more |
+| **Modality**             | ✅ Text-only<br>✅ Text + Image (multi-modal) |
+| **Lightweight Training** | ✅ Supports LoRA training |
+| **Environments**         | ✅ ALFWorld<br>✅ Sokoban<br>✅ Gym Cards<br>✅ WebShop<br>🧪 AppWorld (experimental) |
+| **RL Algorithms**        | ✅ GiGPO<br>✅ GRPO<br>✅ PPO<br>✅ DAPO<br>✅ RLOO<br>✅ REINFORCE++<br>✅ Dynamic sampling & clip-higher supported <br> and more |
+| **Prompt-based Agent**   | ✅ GPT-4o prompt-based agent  |
 
 # Framework Comparison
 <p align="center">

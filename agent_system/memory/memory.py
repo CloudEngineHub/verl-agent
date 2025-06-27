@@ -1,10 +1,8 @@
-# agent_system/environments/memory.py
 from typing import List, Dict, Any
 
 class SimpleMemory:
     """
-    A thin wrapper around List[List[Dict]], responsible for
-    storing & fetching per-environment history records.
+    Memory manager: responsible for storing & fetching per-environment history records.
     """
     def __init__(self):
         self._data = None
