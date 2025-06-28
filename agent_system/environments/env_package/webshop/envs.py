@@ -6,7 +6,7 @@ import numpy as np
 # Ray remote worker actor -----------------------------------------------------
 # -----------------------------------------------------------------------------
 
-@ray.remote(num_cpus=0.25)
+@ray.remote(num_cpus=0.2)
 class WebshopWorker:
     """Ray remote actor that replaces the worker function.
     Each actor hosts a *WebAgentTextEnv* instance.
