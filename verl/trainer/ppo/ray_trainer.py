@@ -742,7 +742,7 @@ class RayPPOTrainer:
             ################ agent-environment loop ###############
             test_output_gen_batch = self.traj_collector.multi_turn_loop(
                                                     gen_batch=test_gen_batch,
-                                                    actor_rollout_wg=self.actor_rollout_wg,
+                                                    actor_rollout_wg=self.async_rollout_manager if self.async_rollout_mode else self.actor_rollout_wg,
                                                     envs=self.val_envs,
                                                     is_train=False,
                                                     )
@@ -1052,7 +1052,7 @@ class RayPPOTrainer:
                         ################ agent-environment loop ###############
                         gen_batch_output = self.traj_collector.multi_turn_loop(
                                                                 gen_batch=gen_batch,
-                                                                actor_rollout_wg=self.actor_rollout_wg,
+                                                                actor_rollout_wg=self.async_rollout_manager if self.async_rollout_mode else self.actor_rollout_wg,
                                                                 envs=self.envs,
                                                                 is_train=True,
                                                                 )

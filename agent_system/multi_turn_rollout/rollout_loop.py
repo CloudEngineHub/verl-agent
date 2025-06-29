@@ -24,6 +24,10 @@ class TrajectoryCollector:
         self.config = config
         self.tokenizer = tokenizer
         self.processor = processor
+        if self.config.actor_rollout_ref.rollout.mode == "async":
+            self.async_rollout_mode = True
+        else:
+            self.async_rollout_mode = False
 
     def preprocess_single_sample(
         self,
@@ -322,9 +326,14 @@ class TrajectoryCollector:
             )
 
             batch_input.meta_info = gen_batch.meta_info
+            if not self.async_rollout_mode:
+                batch_output = actor_rollout_wg.generate_sequences(batch_input)
+            else:
+                actor_rollout_wg.wake_up()
+                batch_output = actor_rollout_wg.generate_sequences(batch_input)
+                actor_rollout_wg.sleep()
 
-            batch_output = actor_rollout_wg.generate_sequences(batch_input)
-
+            # batch_output = actor_rollout_wg.generate_sequences(batch_input)
             batch.non_tensor_batch['uid'] = uid_batch
             batch.non_tensor_batch['traj_uid'] = traj_uid
 
