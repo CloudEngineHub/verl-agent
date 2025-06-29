@@ -59,7 +59,7 @@ Unlike prior approaches that simply concatenate full interaction histories, `ver
     - [2. WebShop](#2-webshop)  
     - [3. Sokoban](#3-sokoban)  
     - [4. Gym Cards](#4-gym-cards)  
-    - [5. APPWorld (Experimental)](#5-appworld-experimental)  
+    - [5. AppWorld (Experimental)](#5-appworld-experimental)  
 - [Run Examples](#run-examples)  
   - [RL Training](#rl-training)  
     - [1. GiGPO](#1-gigpo)  
@@ -144,11 +144,6 @@ pip3 install vllm==0.8.5
 ```
 
 ## Install Supported Environments
-<!-- 
-Details for installing each environment are provided in the [Environment Setup Guide](agent_system/environments/README.md).
-
-`verl-agent` supports the following environments: **ALFWorld**, **WebShop**, **Gym Cards**, **Sokoban**, and **APPWorld** (experimental). -->
-
 > ⚠️ **Important:** 
 To run an agent in any of these environments, you must first install and configure the corresponding environment. We strongly recommend installing ***each environment in its own dedicated conda environment*** to avoid potential package version conflicts.
 
@@ -219,8 +214,8 @@ pip3 install gymnasium==0.29.1
 pip3 install stable-baselines3==2.6.0
 ```
 ---
-### 5. APPWorld (Experimental)
-Install APPWorld package
+### 5. AppWorld (Experimental)
+Install AppWorld package
 ```bash
 cd repo_root/
 pip install git+https://github.com/StonyBrookNLP/appworld.git
@@ -230,7 +225,7 @@ pip install vllm==0.8.5
 ```
 You can ignore the warning of incompatiblity for appworld, because we don't run appworld in `verl-agent` environment.
 
-Create a dedicated conda environment `appworld` for the APPWorld server:
+Create a dedicated conda environment `appworld` for the AppWorld server:
 ```bash
 conda create -n appworld python=3.12 -y
 conda activate appworld
@@ -354,7 +349,7 @@ For a reference implementation, see the webshop environment:
 We welcome and appreciate all contributions! If you have ideas to improve `verl-agent`, please feel free to submit a pull request (PR).
 
 Example contributions include:
-- **APPWorld Bug Fixes**: Fixed compatibility issues and ensured stable integration with the experimental APPWorld environment.
+- **AppWorld Bug Fixes**: Fixed compatibility issues and ensured stable integration with the experimental AppWorld environment.
 - **Asynchronous Rollout**: Improved training efficiency and throughput by supporting asynchronous rollout pipelines.
 - **Additional Environments**: Added support for additional interactive environments to expand the benchmark coverage and task diversity.
 
