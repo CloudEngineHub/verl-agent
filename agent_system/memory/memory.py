@@ -43,7 +43,6 @@ class SimpleMemory(BaseMemory):
     def fetch(
         self,
         history_length: int,
-        *,
         obs_key: str = "text_obs",
         action_key: str = "action",
     ) -> Tuple[List[str], List[int]]:
